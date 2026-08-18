@@ -25,6 +25,7 @@ interface LeafletRouteMapProps {
   startLocation?: MapPoint | null;
   destination?: MapPoint | null;
   stops?: MapPoint[];
+  customPickupPoint?: MapPoint | null;
   driverLocation?: DriverLivePoint | null;
   driverName?: string;
   driverVehicleType?: string;
@@ -44,6 +45,7 @@ export default function LeafletRouteMap({
   startLocation,
   destination,
   stops = [],
+  customPickupPoint = null,
   driverLocation = null,
   driverName,
   driverVehicleType = "Car",
@@ -280,7 +282,31 @@ export default function LeafletRouteMap({
       }
     }
 
-    // 5. Draw Polyline Route
+    // 5. Custom Requested Pickup Point (Purple/Violet Animated Pin)
+    if (
+      customPickupPoint &&
+      typeof customPickupPoint.latitude === "number" &&
+      customPickupPoint.latitude !== 0 &&
+      typeof customPickupPoint.longitude === "number"
+    ) {
+      const customMarker = createHtmlMarker(
+        customPickupPoint.latitude,
+        customPickupPoint.longitude,
+        "bg-purple-600 ring-2 ring-white ring-offset-2 shadow-xl animate-bounce",
+        "📍",
+        customPickupPoint.name || "Custom Stop",
+        false
+      );
+      customMarker.bindPopup(`
+        <div style="font-size: 12px; font-family: sans-serif;">
+          <strong style="color: #9333ea;">📍 Your Custom Pickup Location</strong><br/>
+          <span>${customPickupPoint.address || customPickupPoint.name}</span>
+        </div>
+      `);
+      boundsPoints.push([customPickupPoint.latitude, customPickupPoint.longitude]);
+    }
+
+    // 6. Draw Polyline Route
     if (routeCoordinates && routeCoordinates.length > 0) {
       const polyline = L.polyline(routeCoordinates, {
         color: "#059669", // Emerald green
@@ -296,8 +322,12 @@ export default function LeafletRouteMap({
       routeCoordinates.forEach((pt) => boundsPoints.push(pt));
     }
 
-    // Auto-fit bounds if points exist and not explicitly locked to driver
-    if (boundsPoints.length > 0 && !panToDriver) {
+    // Auto-fit bounds or pan to custom point
+    if (customPickupPoint && customPickupPoint.latitude && customPickupPoint.longitude) {
+      map.setView([customPickupPoint.latitude, customPickupPoint.longitude], Math.max(map.getZoom(), 14), {
+        animate: true,
+      });
+    } else if (boundsPoints.length > 0 && !panToDriver) {
       try {
         const bounds = L.latLngBounds(boundsPoints);
         map.fitBounds(bounds, {
@@ -309,7 +339,7 @@ export default function LeafletRouteMap({
         console.warn("Bounds fitting warning:", err);
       }
     }
-  }, [startLocation, destination, stops, driverLocation, routeCoordinates, panToDriver]);
+  }, [startLocation, destination, stops, customPickupPoint, driverLocation, routeCoordinates, panToDriver]);
 
   return (
     <div className={`relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm ${className}`}>

@@ -12,6 +12,7 @@ export interface MapViewProps {
   startLocation?: MapPoint | null;
   destination?: MapPoint | null;
   stops?: MapPoint[];
+  customPickupPoint?: MapPoint | null;
   driverLocation?: DriverLivePoint | null;
   driverName?: string;
   driverVehicleType?: string;
