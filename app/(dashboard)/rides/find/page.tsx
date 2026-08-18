@@ -139,6 +139,7 @@ export default function FindRidePage() {
 
   // Custom Stop Request Mode
   const [isCustomStopMode, setIsCustomStopMode] = useState(false);
+  const [customStopText, setCustomStopText] = useState("");
   const [customStopAddress, setCustomStopAddress] = useState("");
   const [customStopLat, setCustomStopLat] = useState<number>(0);
   const [customStopLng, setCustomStopLng] = useState<number>(0);
@@ -208,7 +209,10 @@ export default function FindRidePage() {
   const handleOpenBooking = (ride: IRide) => {
     setSelectedRide(ride);
     setIsCustomStopMode(false);
+    setCustomStopText("");
     setCustomStopAddress("");
+    setCustomStopLat(0);
+    setCustomStopLng(0);
 
     if (ride.stops && ride.stops.length > 0) {
       setSelectedPickupStop(ride.stops[0].name);
@@ -242,6 +246,7 @@ export default function FindRidePage() {
   const handleMapStopClick = (loc: { address: string; latitude: number; longitude: number }) => {
     if (isCustomStopMode) {
       const short = loc.address.split(",")[0].trim();
+      setCustomStopText(short);
       setCustomStopAddress(loc.address);
       setCustomStopLat(loc.latitude);
       setCustomStopLng(loc.longitude);
@@ -259,9 +264,11 @@ export default function FindRidePage() {
     setBookingSuccessMsg(null);
 
     try {
-      const pickupName = isCustomStopMode && customStopAddress
-        ? `Custom Stop: ${customStopAddress.split(",")[0]}`
+      const requestedLocation = isCustomStopMode
+        ? customStopText.trim() || (customStopAddress ? customStopAddress.split(",")[0].trim() : "Custom Boarding Stop")
         : selectedPickupStop;
+
+      const pickupName = isCustomStopMode ? `Custom Stop: ${requestedLocation}` : selectedPickupStop;
 
       const res = await fetch(`/api/rides/${selectedRide._id}/request`, {
         method: "POST",
@@ -701,46 +708,93 @@ export default function FindRidePage() {
                 )}
 
                 {/* Stop Selection Mode Toggle */}
-                <div className="flex items-center justify-between pt-1">
-                  <Label className="text-xs font-semibold text-slate-800">
-                    Select Boarding / Pickup Location
-                  </Label>
-                  <button
-                    type="button"
-                    onClick={() => setIsCustomStopMode(!isCustomStopMode)}
-                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 hover:underline"
-                  >
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    {isCustomStopMode ? "Choose from standard stops" : "Request custom map point"}
-                  </button>
-                </div>
-
-                {!isCustomStopMode ? (
-                  <Select value={selectedPickupStop} onValueChange={handleStopSelect}>
-                    <SelectTrigger className="rounded-xl text-xs">
-                      <SelectValue placeholder="Choose boarding stop" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={selectedRide.startingLocation}>
-                        {selectedRide.startingLocation} (Origin) — ₹{selectedRide.basePrice || 100}
-                      </SelectItem>
-                      {selectedRide.stops?.map((stop, idx) => (
-                        <SelectItem key={idx} value={stop.name}>
-                          {stop.name} (Stop {idx + 1}) — ₹{stop.price}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs space-y-1">
-                    <span className="font-bold text-amber-900 block">Custom Stop Selection</span>
-                    <p className="text-amber-800 text-[11px]">
-                      {customStopAddress
-                        ? `Selected Pin: ${customStopAddress}`
-                        : "Click anywhere on the map above to select your custom boarding point."}
-                    </p>
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Boarding / Pickup Stop
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomStopMode(!isCustomStopMode);
+                        if (!isCustomStopMode) {
+                          setSelectedPickupStop(customStopText ? `Custom Stop: ${customStopText}` : "Custom Boarding Point");
+                          setSelectedFare(selectedRide.basePrice ? Math.round(selectedRide.basePrice * 0.8) : 120);
+                        } else {
+                          setSelectedPickupStop(selectedRide.startingLocation);
+                          setSelectedFare(selectedRide.basePrice || 100);
+                        }
+                      }}
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 hover:underline"
+                    >
+                      {isCustomStopMode ? (
+                        <>
+                          <Check className="h-3.5 w-3.5" /> Choose from standard route stops
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle className="h-3.5 w-3.5" /> Request custom stop / type address
+                        </>
+                      )}
+                    </button>
                   </div>
-                )}
+
+                  {!isCustomStopMode ? (
+                    <Select value={selectedPickupStop} onValueChange={handleStopSelect}>
+                      <SelectTrigger className="rounded-xl text-xs h-10">
+                        <SelectValue placeholder="Choose boarding stop" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={selectedRide.startingLocation}>
+                          {selectedRide.startingLocation} (Origin) — ₹{selectedRide.basePrice || 100}
+                        </SelectItem>
+                        {selectedRide.stops?.map((stop, idx) => (
+                          <SelectItem key={idx} value={stop.name}>
+                            {stop.name} (Stop {idx + 1}) — ₹{stop.price}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-300 text-xs space-y-2.5 animate-in fade-in-50">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-950 block">Request Custom Boarding Point</span>
+                        <span className="text-[10px] text-emerald-800 bg-white px-2 py-0.5 rounded-md border border-emerald-200 font-semibold">
+                          Custom Stop Mode
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="customStopInput" className="text-[11px] font-semibold text-slate-700 block">
+                          Type Your Boarding Landmark, Junction, or Street:
+                        </Label>
+                        <Input
+                          id="customStopInput"
+                          placeholder="e.g. Chromepet Signal, Darga Road, Velachery Station..."
+                          value={customStopText}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomStopText(val);
+                            setSelectedPickupStop(val ? `Custom Stop: ${val}` : "Custom Boarding Point");
+                          }}
+                          className="rounded-xl text-xs bg-white h-9"
+                          autoFocus
+                        />
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span>Tip: You can also tap anywhere along the route on the map above to auto-fill the stop address.</span>
+                      </p>
+
+                      {customStopAddress && (
+                        <div className="text-[10px] text-emerald-900 bg-white/90 p-2 rounded-lg border border-emerald-200 font-mono truncate">
+                          📍 Map Pinned: {customStopAddress}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Seats Needed & Estimated Total Fare */}
                 <div className="grid grid-cols-2 gap-3">
