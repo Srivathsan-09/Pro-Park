@@ -88,14 +88,21 @@ export const authOptions: NextAuthOptions = {
               email: normalizedEmail,
               employeeId,
               department: "Engineering",
+              companyName: "Tech Mahindra",
               phone: "",
               role: "employee",
-              verificationStatus: "pending",
-              isApproved: false,
+              verificationStatus: "approved",
+              isApproved: true,
               profileImage: user.image || "",
             });
-          } else if (!dbUser.profileImage && user.image) {
-            dbUser.profileImage = user.image;
+          } else {
+            if (!dbUser.profileImage && user.image) {
+              dbUser.profileImage = user.image;
+            }
+            if (dbUser.verificationStatus !== "approved") {
+              dbUser.verificationStatus = "approved";
+              dbUser.isApproved = true;
+            }
             await dbUser.save();
           }
 
