@@ -1,0 +1,110 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
+import { LogOut, Car, Shield, Menu, X, User as UserIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { getInitials } from "@/lib/utils";
+
+interface NavbarProps {
+  onMobileMenuToggle?: () => void;
+  isMobileMenuOpen?: boolean;
+}
+
+export function Navbar({ onMobileMenuToggle, isMobileMenuOpen }: NavbarProps) {
+  const { data: session } = useSession();
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/login" });
+  };
+
+  return (
+    <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <div className="flex items-center gap-3">
+        {/* Mobile menu trigger */}
+        <button
+          onClick={onMobileMenuToggle}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 md:hidden"
+          aria-label="Toggle navigation"
+        >
+          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+
+        {/* Brand Logo */}
+        <Link href="/dashboard" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+            <Car className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-base font-bold tracking-tight text-slate-900 leading-tight">
+              PRO PARK
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+              Corporate Commute
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* User info & Actions */}
+      <div className="flex items-center gap-3">
+        {session?.user ? (
+          <>
+            <div className="hidden sm:flex flex-col items-end">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-slate-800">
+                  {session.user.name}
+                </span>
+                {session.user.role === "admin" ? (
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 gap-1 text-[11px]">
+                    <Shield className="h-3 w-3" /> Admin
+                  </Badge>
+                ) : (
+                  <Badge variant="default" className="text-[11px]">
+                    {session.user.employeeId || "Employee"}
+                  </Badge>
+                )}
+              </div>
+              <span className="text-xs text-slate-500">
+                {session.user.department || session.user.email}
+              </span>
+            </div>
+
+            {/* User Avatar */}
+            <Link
+              href="/profile"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
+              title="View Profile"
+            >
+              {getInitials(session.user.name || "PP")}
+            </Link>
+
+            {/* Logout CTA */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="gap-1.5 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden md:inline">Logout</span>
+            </Button>
+          </>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link href="/login">
+              <Button variant="ghost" size="sm">
+                Login
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button size="sm">Register</Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}

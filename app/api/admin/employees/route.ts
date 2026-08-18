@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/db/mongodb";
+import User from "@/models/User";
+import Vehicle from "@/models/Vehicle";
+
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || session.user.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Access denied. Administrator privileges required." },
+        { status: 403 }
+      );
+    }
+
+    await connectToDatabase();
+
+    // Fetch all registered employees
+    const employees = await User.find()
+      .select("-passwordHash")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Fetch vehicle counts per user
+    const vehicleCounts = await Vehicle.aggregate([
+      { $group: { _id: "$owner", count: { $sum: 1 } } },
+    ]);
+
+    const countMap = new Map(vehicleCounts.map((v) => [v._id.toString(), v.count]));
+
+    const enrichedEmployees = employees.map((emp) => ({
+      ...emp,
+      vehicleCount: countMap.get(emp._id.toString()) || 0,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      employees: enrichedEmployees,
+    });
+  } catch (error: unknown) {
+    console.error("Admin Employees GET error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch employees list." },
+      { status: 500 }
+    );
+  }
+}
