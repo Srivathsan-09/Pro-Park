@@ -722,14 +722,19 @@ export default function OfferRidePage() {
                       </button>
                     </div>
                     <LocationSearchInput
-                      value={formData.startingLocation}
+                      id="startingLocation"
                       placeholder="e.g. Tambaram Sanatorium, Chennai"
-                      onSelect={(loc) => {
+                      value={formData.startingLocation}
+                      onChange={(loc) => {
                         setFormData((prev) => ({ ...prev, startingLocation: loc.address }));
                         setStartPoint({ name: loc.address, address: loc.address, latitude: loc.latitude, longitude: loc.longitude });
                       }}
-                      error={fieldErrors.startingLocation}
+                      hasError={Boolean(fieldErrors.startingLocation)}
+                      required
                     />
+                    {fieldErrors.startingLocation && (
+                      <p className="text-xs text-rose-600">{fieldErrors.startingLocation}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -752,14 +757,19 @@ export default function OfferRidePage() {
                       </button>
                     </div>
                     <LocationSearchInput
-                      value={formData.destination}
+                      id="destination"
                       placeholder="e.g. Tech Mahindra SEZ Campus, OMR, Sholinganallur"
-                      onSelect={(loc) => {
+                      value={formData.destination}
+                      onChange={(loc) => {
                         setFormData((prev) => ({ ...prev, destination: loc.address }));
                         setEndPoint({ name: loc.address, address: loc.address, latitude: loc.latitude, longitude: loc.longitude });
                       }}
-                      error={fieldErrors.destination}
+                      hasError={Boolean(fieldErrors.destination)}
+                      required
                     />
+                    {fieldErrors.destination && (
+                      <p className="text-xs text-rose-600">{fieldErrors.destination}</p>
+                    )}
                   </div>
                 </div>
 
@@ -851,7 +861,7 @@ export default function OfferRidePage() {
                         <LocationSearchInput
                           value={newStopName}
                           placeholder="Search stop name (e.g. Kathipara)"
-                          onSelect={(loc) => {
+                          onChange={(loc) => {
                             setNewStopName(loc.address.split(",")[0]);
                             setNewStopAddress(loc.address);
                             setNewStopLat(loc.latitude);

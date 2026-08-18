@@ -72,8 +72,10 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
+          if (!user?.email) return false;
           await connectToDatabase();
-          if (!user.email) return false;
+          const normalizedEmail = user.email.toLowerCase().trim();
+          let dbUser = await User.findOne({ email: normalizedEmail });
 
           const ADMIN_EMAILS = ["srimana2006@gmail.com", "admin@propark.corporate.com"];
           const isAdminUser = ADMIN_EMAILS.includes(normalizedEmail);
