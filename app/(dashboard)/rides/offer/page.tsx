@@ -606,17 +606,16 @@ export default function OfferRidePage() {
               {renderRideSummaryCard()}
             </div>
           </div>
-
-          <div className="order-2 lg:order-1 lg:col-span-7 space-y-6">
+            <div className="order-2 lg:order-1 lg:col-span-7 space-y-4">
             <Card className="border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
-              <CardHeader className="border-b border-slate-100 pb-4">
+              <CardHeader className="border-b border-slate-100 pb-3.5 pt-4 px-4 sm:px-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <CardTitle className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                       <Car className="h-5 w-5 text-emerald-600" /> Post Campus Ride
                     </CardTitle>
                     <CardDescription className="text-xs text-slate-500 mt-0.5">
-                      Configure commute direction, choose your vehicle, and set pickup points with fares
+                      Configure your commute direction, vehicle, and route stops
                     </CardDescription>
                   </div>
 
@@ -628,108 +627,93 @@ export default function OfferRidePage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="p-6 space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="rideType" className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
-                      <span>Commute Direction</span>
-                      <span className="text-[10px] text-emerald-700 font-medium lowercase font-mono">
-                        {isPickup ? "morning pickup" : "evening drop"}
-                      </span>
-                    </Label>
-                    <Select
-                      value={formData.rideType}
-                      onValueChange={(val: "pickup" | "drop") => handleRideTypeChange(val)}
-                    >
-                      <SelectTrigger id="rideType" className="rounded-xl h-11 text-xs font-semibold">
-                        <SelectValue placeholder="Select Pickup or Drop" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pickup">
-                          <div className="flex items-center gap-2">
-                            <Sun className="h-4 w-4 text-amber-500" />
-                            <span className="font-bold">Pickup</span>
-                            <span className="text-slate-400 text-[11px]">(Morning to Campus)</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="drop">
-                          <div className="flex items-center gap-2">
-                            <Moon className="h-4 w-4 text-indigo-500" />
-                            <span className="font-bold">Drop</span>
-                            <span className="text-slate-400 text-[11px]">(Evening from Campus)</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="vehicleId" className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                      Vehicle (Car or Bike)
-                    </Label>
-                    <Select
-                      value={formData.vehicleId}
-                      onValueChange={handleVehicleChange}
-                    >
-                      <SelectTrigger id="vehicleId" className="rounded-xl h-11 text-xs">
-                        <SelectValue placeholder="Select vehicle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicles.map((v) => {
-                          const isApproved = v.isApproved || v.verificationStatus === "approved" || session?.user?.role === "admin";
-                          return (
-                            <SelectItem key={v._id} value={v._id}>
-                              {v.vehicleModel} ({v.registrationNumber}) — {v.vehicleType} {!isApproved ? "⚠️ (Pending Admin Approval)" : "✓ Verified"}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                      Commute Route ({isPickup ? "To Campus" : "From Campus"})
-                    </Label>
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {/* 1. Segmented Commute Direction Switcher */}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 p-1 bg-slate-100/90 rounded-2xl gap-1">
                     <button
                       type="button"
-                      onClick={handleSwapRoute}
-                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 hover:underline"
+                      onClick={() => handleRideTypeChange("pickup")}
+                      className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                        isPickup
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-500 hover:text-slate-900"
+                      }`}
                     >
-                      <ArrowRightLeft className="h-3 w-3" /> Swap Direction
+                      <Sun className={`h-4 w-4 ${isPickup ? "text-amber-500" : ""}`} />
+                      <span>Morning Pickup (To Campus)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRideTypeChange("drop")}
+                      className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                        !isPickup
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-500 hover:text-slate-900"
+                      }`}
+                    >
+                      <Moon className={`h-4 w-4 ${!isPickup ? "text-indigo-600" : ""}`} />
+                      <span>Evening Drop (From Campus)</span>
                     </button>
                   </div>
 
+                  {/* Vehicle Picker */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={formData.vehicleId}
+                        onValueChange={handleVehicleChange}
+                      >
+                        <SelectTrigger id="vehicleId" className="rounded-xl h-9 text-xs">
+                          <SelectValue placeholder="Select vehicle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vehicles.map((v) => {
+                            const isApproved = v.isApproved || v.verificationStatus === "approved" || session?.user?.role === "admin";
+                            return (
+                              <SelectItem key={v._id} value={v._id}>
+                                {v.vehicleModel} ({v.registrationNumber}) — {v.vehicleType} {!isApproved ? "⚠️ (Pending Admin Approval)" : "✓ Verified"}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Connected Route Timeline Card */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                  {/* Origin (From) */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0 ring-2 ring-emerald-200" />
                         <span>Starting Location (Origin)</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => setMapPickingTarget(mapPickingTarget === "origin" ? null : "origin")}
-                        className={`text-[11px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
                           mapPickingTarget === "origin"
                             ? "bg-emerald-600 text-white"
-                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
                         }`}
                       >
-                        <Crosshair className="h-3 w-3" />
-                        {mapPickingTarget === "origin" ? "Cancel Map Pick" : "Pick on Map"}
+                        {mapPickingTarget === "origin" ? "Cancel Pick" : "📍 Pick on Map"}
                       </button>
                     </div>
                     <LocationSearchInput
                       id="startingLocation"
-                      placeholder="e.g. Tambaram Sanatorium, Chennai"
+                      placeholder="Search starting origin (e.g. Tambaram)"
                       value={formData.startingLocation}
+                      showCurrentLocation={false}
                       onChange={(loc) => {
                         setFormData((prev) => ({ ...prev, startingLocation: loc.address }));
                         setStartPoint({ name: loc.address, address: loc.address, latitude: loc.latitude, longitude: loc.longitude });
                       }}
                       hasError={Boolean(fieldErrors.startingLocation)}
+                      className="h-9 text-xs bg-white"
                       required
                     />
                     {fieldErrors.startingLocation && (
@@ -737,34 +721,48 @@ export default function OfferRidePage() {
                     )}
                   </div>
 
+                  {/* Swap Button Bar */}
+                  <div className="flex items-center justify-between px-2">
+                    <div className="w-0.5 h-3 bg-slate-300 ml-1" />
+                    <button
+                      type="button"
+                      onClick={handleSwapRoute}
+                      className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-300 transition-colors text-[10px] font-semibold flex items-center gap-1 shadow-2xs"
+                    >
+                      <ArrowRightLeft className="h-3 w-3" /> Swap Direction
+                    </button>
+                  </div>
+
+                  {/* Destination (To) */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                        <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0 ring-2 ring-blue-200" />
                         <span>Destination</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => setMapPickingTarget(mapPickingTarget === "destination" ? null : "destination")}
-                        className={`text-[11px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
                           mapPickingTarget === "destination"
                             ? "bg-blue-600 text-white"
-                            : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                            : "bg-blue-100 text-blue-800 hover:bg-blue-200"
                         }`}
                       >
-                        <Crosshair className="h-3 w-3" />
-                        {mapPickingTarget === "destination" ? "Cancel Map Pick" : "Pick on Map"}
+                        {mapPickingTarget === "destination" ? "Cancel Pick" : "📍 Pick on Map"}
                       </button>
                     </div>
                     <LocationSearchInput
                       id="destination"
-                      placeholder="e.g. Tech Mahindra SEZ Campus, OMR, Sholinganallur"
+                      placeholder="Search destination (e.g. Tech Mahindra Campus)"
                       value={formData.destination}
+                      showCurrentLocation={false}
                       onChange={(loc) => {
                         setFormData((prev) => ({ ...prev, destination: loc.address }));
                         setEndPoint({ name: loc.address, address: loc.address, latitude: loc.latitude, longitude: loc.longitude });
                       }}
                       hasError={Boolean(fieldErrors.destination)}
+                      className="h-9 text-xs bg-white"
                       required
                     />
                     {fieldErrors.destination && (
@@ -773,52 +771,41 @@ export default function OfferRidePage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 pt-2 border-t border-slate-100">
+                {/* 3. Intermediary Stops List & Compact Add Bar */}
+                <div className="space-y-2 pt-1 border-t border-slate-100">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                        Intermediary Pickup / Drop Stops
-                      </Label>
-                      <p className="text-[11px] text-slate-500">
-                        Add key junction points along the route with suggested seat fares
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-[11px] font-semibold">
-                      {stops.length} Stops Added
-                    </Badge>
+                    <span className="text-xs font-bold text-slate-800">
+                      Route Stops ({stops.length})
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Add boarding points along your route
+                    </span>
                   </div>
 
                   {stops.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {stops.map((stop, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs gap-3"
+                          className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs gap-2"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
                               {idx + 1}
                             </span>
-                            <div className="min-w-0">
-                              <span className="font-semibold text-slate-900 block truncate">
-                                {stop.name}
-                              </span>
-                              {stop.address && stop.address !== stop.name && (
-                                <span className="text-[10px] text-slate-500 block truncate">
-                                  {stop.address}
-                                </span>
-                              )}
-                            </div>
+                            <span className="font-semibold text-slate-800 truncate">
+                              {stop.name}
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                              <span className="text-slate-500 text-[10px]">₹</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-0.5 bg-white px-2 py-0.5 rounded-lg border border-slate-200 font-bold text-slate-800 text-xs">
+                              <span className="text-slate-400 text-[10px]">₹</span>
                               <input
                                 type="number"
                                 value={stop.price}
                                 onChange={(e) => handleStopPriceChange(idx, Number(e.target.value) || 0)}
-                                className="w-12 text-xs font-bold text-slate-800 focus:outline-none"
+                                className="w-10 text-xs font-bold text-slate-800 focus:outline-none text-right"
                               />
                             </div>
                             <Button
@@ -826,7 +813,7 @@ export default function OfferRidePage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveStop(idx)}
-                              className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600"
+                              className="h-6 w-6 p-0 text-slate-400 hover:text-rose-600"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -836,95 +823,88 @@ export default function OfferRidePage() {
                     </div>
                   )}
 
-                  <div className="p-3.5 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/40 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                        <Plus className="h-3.5 w-3.5 text-emerald-700" />
-                        <span>Add Route Stop</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMapPickingTarget(mapPickingTarget === "newStop" ? null : "newStop")}
-                        className={`text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors ${
-                          mapPickingTarget === "newStop"
-                            ? "bg-emerald-700 text-white"
-                            : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                        }`}
-                      >
-                        <Crosshair className="h-3 w-3" />
-                        {mapPickingTarget === "newStop" ? "Cancel Map Pick" : "Pin on Map"}
-                      </button>
+                  {/* Compact Single-Line Add Stop Bar */}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex-1 min-w-0">
+                      <LocationSearchInput
+                        value={newStopName}
+                        placeholder="Add stop (e.g. Kathipara)"
+                        showCurrentLocation={false}
+                        onChange={(loc) => {
+                          setNewStopName(loc.address.split(",")[0]);
+                          setNewStopAddress(loc.address);
+                          setNewStopLat(loc.latitude);
+                          setNewStopLng(loc.longitude);
+                        }}
+                        className="h-9 text-xs"
+                      />
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <div className="sm:col-span-2">
-                        <LocationSearchInput
-                          value={newStopName}
-                          placeholder="Search stop name (e.g. Kathipara)"
-                          onChange={(loc) => {
-                            setNewStopName(loc.address.split(",")[0]);
-                            setNewStopAddress(loc.address);
-                            setNewStopLat(loc.latitude);
-                            setNewStopLng(loc.longitude);
-                          }}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-2.5 top-2.5 text-xs text-slate-400">₹</span>
-                          <Input
-                            type="number"
-                            placeholder="Fare"
-                            value={newStopPrice}
-                            onChange={(e) => setNewStopPrice(Number(e.target.value))}
-                            className="pl-6 rounded-xl text-xs h-9"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={handleAddStop}
-                          disabled={!newStopName.trim()}
-                          className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs rounded-xl h-9 px-3"
-                        >
-                          Add
-                        </Button>
-                      </div>
+                    <div className="relative w-16 shrink-0">
+                      <span className="absolute left-2 top-2 text-xs text-slate-400 font-bold">₹</span>
+                      <Input
+                        type="number"
+                        placeholder="Fare"
+                        value={newStopPrice}
+                        onChange={(e) => setNewStopPrice(Number(e.target.value))}
+                        className="pl-5 pr-1 text-xs font-bold rounded-xl h-9 text-center"
+                      />
                     </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddStop}
+                      disabled={!newStopName.trim()}
+                      className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs rounded-xl h-9 px-3 shrink-0"
+                    >
+                      + Add
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setMapPickingTarget(mapPickingTarget === "newStop" ? null : "newStop")}
+                      className={`p-2 rounded-xl transition-colors shrink-0 h-9 w-9 flex items-center justify-center border ${
+                        mapPickingTarget === "newStop"
+                          ? "bg-emerald-700 text-white border-emerald-700"
+                          : "bg-white text-slate-500 hover:bg-slate-100 border-slate-200"
+                      }`}
+                      title="Pin stop on map"
+                    >
+                      <Crosshair className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="departureDate" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Departure Date
+                {/* 4. Schedule, Date, Time & Available Seats */}
+                <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-slate-100">
+                  <div className="space-y-1">
+                    <Label htmlFor="departureDate" className="text-[10px] font-bold uppercase text-slate-500 block">
+                      Date
                     </Label>
                     <Input
                       id="departureDate"
                       type="date"
                       value={formData.departureDate}
                       onChange={(e) => setFormData((prev) => ({ ...prev, departureDate: e.target.value }))}
-                      className="rounded-xl h-10 text-xs"
+                      className="rounded-xl h-9 text-xs"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="departureTime" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Departure Time
+                  <div className="space-y-1">
+                    <Label htmlFor="departureTime" className="text-[10px] font-bold uppercase text-slate-500 block">
+                      Time
                     </Label>
                     <Input
                       id="departureTime"
-                      placeholder="e.g. 08:30 AM"
+                      placeholder="08:30 AM"
                       value={formData.departureTime}
                       onChange={(e) => setFormData((prev) => ({ ...prev, departureTime: e.target.value }))}
-                      className="rounded-xl h-10 text-xs"
+                      className="rounded-xl h-9 text-xs font-semibold"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="availableSeats" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Available Seats
+                  <div className="space-y-1">
+                    <Label htmlFor="availableSeats" className="text-[10px] font-bold uppercase text-slate-500 block">
+                      Seats
                     </Label>
                     <Input
                       id="availableSeats"
@@ -933,27 +913,29 @@ export default function OfferRidePage() {
                       max={selectedVehicle?.seatingCapacity || 6}
                       value={formData.availableSeats}
                       onChange={(e) => setFormData((prev) => ({ ...prev, availableSeats: Number(e.target.value) }))}
-                      className="rounded-xl h-10 text-xs"
+                      className="rounded-xl h-9 text-xs text-center font-bold"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Driver Notes & Route Instructions (Optional)
+                {/* 5. Driver Notes */}
+                <div className="space-y-1 pt-1 border-t border-slate-100">
+                  <Label htmlFor="notes" className="text-[10px] font-bold uppercase text-slate-500">
+                    Driver Notes (Optional)
                   </Label>
                   <Input
                     id="notes"
                     placeholder="e.g. AC will be on, leaving sharp from campus gate"
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                    className="rounded-xl text-xs"
+                    className="rounded-xl text-xs h-9"
                   />
                 </div>
               </CardContent>
             </Card>
 
+            {/* Mobile Only: Ride Summary & Post Button directly below form */}
             <div className="block lg:hidden">
               {renderRideSummaryCard()}
             </div>
