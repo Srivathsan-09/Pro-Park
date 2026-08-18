@@ -112,7 +112,7 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full shadow-lg border-slate-200 bg-white rounded-2xl overflow-hidden">
+    <Card className="w-full shadow-none border-0 bg-white rounded-none overflow-hidden">
       {/* Top Tab Switcher */}
       <div className="flex border-b border-slate-100 bg-slate-50 text-xs font-semibold">
         <div className="flex-1 py-3.5 text-center border-b-2 border-emerald-600 text-emerald-700 bg-white font-bold">

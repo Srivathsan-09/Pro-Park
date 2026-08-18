@@ -131,7 +131,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card className="w-full shadow-2xl border-slate-200 bg-white rounded-2xl overflow-hidden my-4">
+    <Card className="w-full shadow-none border-0 bg-white rounded-none overflow-hidden my-0">
       {/* Top Tab Bar */}
       <div className="flex border-b border-slate-100 bg-slate-50 text-xs font-semibold">
         <Link
