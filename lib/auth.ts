@@ -127,7 +127,7 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, account, trigger, session }) {
       if (user) {
-        token.id = user.id;
+        token.id = user.id || (token.sub as string);
         token.role = user.role;
         token.employeeId = user.employeeId;
         token.department = user.department;
@@ -136,11 +136,11 @@ export const authOptions: NextAuthOptions = {
         token.isApproved = user.isApproved;
       }
 
-      // Re-verify against MongoDB if token is pending approval or during dynamic update
-      if (token.email && (token.verificationStatus !== "approved" || trigger === "update")) {
+      // Re-verify against MongoDB to guarantee valid database user _id
+      if ((!token.id || token.verificationStatus !== "approved" || trigger === "update") && token.email) {
         try {
           await connectToDatabase();
-          const dbUser = await User.findOne({ email: token.email.toLowerCase() });
+          const dbUser = await User.findOne({ email: token.email.toLowerCase().trim() });
           if (dbUser) {
             token.id = dbUser._id.toString();
             token.role = dbUser.role;
@@ -170,7 +170,7 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = (token.id || token.sub) as string;
         session.user.role = (token.role as "employee" | "admin") || "employee";
         session.user.employeeId = token.employeeId as string;
         session.user.department = token.department as string;

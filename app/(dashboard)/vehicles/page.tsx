@@ -244,22 +244,30 @@ export default function VehiclesPage() {
           formattedErrors[err.path[0].toString()] = err.message;
         }
       });
+      const firstError = validation.error.errors[0]?.message || "Please complete all required fields.";
       setFieldErrors(formattedErrors);
+      setDialogError(firstError);
       return;
     }
 
     if (!formData.vehiclePhoto) {
-      setFieldErrors((prev) => ({ ...prev, vehiclePhoto: "Vehicle photo is required for campus verification." }));
+      const msg = "Please upload the full vehicle photo.";
+      setFieldErrors((prev) => ({ ...prev, vehiclePhoto: msg }));
+      setDialogError(msg);
       return;
     }
 
     if (!formData.numberPlatePhoto) {
-      setFieldErrors((prev) => ({ ...prev, numberPlatePhoto: "Number plate photo is required for verification." }));
+      const msg = "Please upload the number plate photo.";
+      setFieldErrors((prev) => ({ ...prev, numberPlatePhoto: msg }));
+      setDialogError(msg);
       return;
     }
 
     if (!formData.drivingLicensePhoto) {
-      setFieldErrors((prev) => ({ ...prev, drivingLicensePhoto: "Driver's license photo is required for carpooling authorization." }));
+      const msg = "Please upload the driver's license copy.";
+      setFieldErrors((prev) => ({ ...prev, drivingLicensePhoto: msg }));
+      setDialogError(msg);
       return;
     }
 
@@ -856,6 +864,13 @@ export default function VehiclesPage() {
                 </div>
               </div>
             </div>
+
+            {dialogError && (
+              <div className="flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 mb-3 animate-in fade-in-50">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <span className="font-semibold">{dialogError}</span>
+              </div>
+            )}
 
             <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100">
               <Button
