@@ -81,10 +81,10 @@ export const authOptions: NextAuthOptions = {
           if (!dbUser) {
             // Generate a unique Company ID for first-time Google sign-ins
             const randomCode = Math.floor(1000 + Math.random() * 9000);
-            const employeeId = isAdminUser ? "ADM-SRIMAN" : `EMP-G${randomCode}`;
+            const employeeId = isAdminUser ? "ADM-VATHSAN" : `EMP-G${randomCode}`;
 
             dbUser = await User.create({
-              name: user.name || (isAdminUser ? "Admin Sriman" : "Corporate Employee"),
+              name: isAdminUser ? "Vathsan" : user.name || "Corporate Employee",
               email: normalizedEmail,
               employeeId,
               department: isAdminUser ? "Executive Management" : "Engineering",
@@ -100,6 +100,7 @@ export const authOptions: NextAuthOptions = {
               dbUser.profileImage = user.image;
             }
             if (isAdminUser) {
+              dbUser.name = "Vathsan";
               dbUser.role = "admin";
               dbUser.verificationStatus = "approved";
               dbUser.isApproved = true;
