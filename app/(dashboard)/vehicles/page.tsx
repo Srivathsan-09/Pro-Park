@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/common/EmptyState";
 import { vehicleSchema } from "@/validations/vehicle.schema";
+import { compressImage } from "@/lib/utils/imageCompressor";
 
 interface IVehicle {
   _id: string;
@@ -70,6 +71,8 @@ export default function VehiclesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const [compressingField, setCompressingField] = useState<string | null>(null);
 
   // Dialog States
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -190,31 +193,39 @@ export default function VehiclesPage() {
     }));
   };
 
-  const handleFileUpload = (
+  const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "vehiclePhoto" | "numberPlatePhoto" | "drivingLicensePhoto"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setFieldErrors((prev) => ({ ...prev, [field]: "Image size cannot exceed 5MB." }));
-      return;
-    }
+    try {
+      setCompressingField(field);
+      setDialogError(null);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
+      // Auto-compress mobile camera photo to lightweight ~80-120KB JPEG
+      const compressedDataUrl = await compressImage(file, 1000, 0.75);
+
       setFormData((prev) => ({
         ...prev,
-        [field]: reader.result as string,
+        [field]: compressedDataUrl,
       }));
       setFieldErrors((prev) => {
         const updated = { ...prev };
         delete updated[field];
         return updated;
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Image compression error:", err);
+      setFieldErrors((prev) => ({
+        ...prev,
+        [field]: "Could not process this image. Please choose another photo.",
+      }));
+    } finally {
+      setCompressingField(null);
+      e.target.value = "";
+    }
   };
 
   // Submit Handler for Add / Edit
@@ -222,6 +233,7 @@ export default function VehiclesPage() {
     e.preventDefault();
     setSuccessMessage(null);
     setErrorMessage(null);
+    setDialogError(null);
     setFieldErrors({});
 
     const validation = vehicleSchema.safeParse(formData);
@@ -254,49 +266,50 @@ export default function VehiclesPage() {
     setIsSubmitting(true);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+      const endpoint = selectedVehicle ? `/api/vehicles/${selectedVehicle._id}` : "/api/vehicles";
+      const method = selectedVehicle ? "PATCH" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorMsg = data.error || (data.details ? data.details.join(", ") : "Failed to register vehicle.");
+        setDialogError(errorMsg);
+        setErrorMessage(errorMsg);
+        setIsSubmitting(false);
+        return;
+      }
+
       if (selectedVehicle) {
-        // Edit flow
-        const res = await fetch(`/api/vehicles/${selectedVehicle._id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          setErrorMessage(data.error || "Failed to update vehicle.");
-          setIsSubmitting(false);
-          return;
-        }
-
         setVehicles((prev) =>
           prev.map((v) => (v._id === selectedVehicle._id ? data.vehicle : v))
         );
         setSuccessMessage("Vehicle details updated successfully.");
         setIsEditOpen(false);
       } else {
-        // Add flow
-        const res = await fetch("/api/vehicles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          setErrorMessage(data.error || "Failed to register vehicle.");
-          setIsSubmitting(false);
-          return;
-        }
-
         setVehicles((prev) => [data.vehicle, ...prev]);
         setSuccessMessage("Vehicle and documents submitted for campus admin verification!");
         setIsAddOpen(false);
       }
       resetForm();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Vehicle submission error:", err);
-      setErrorMessage("A network error occurred. Please try again.");
+      const msg =
+        err.name === "AbortError"
+          ? "Submission timed out. Please check your internet connection and try again."
+          : "A network error occurred while submitting. Please try again.";
+      setDialogError(msg);
+      setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -540,6 +553,13 @@ export default function VehiclesPage() {
             </DialogHeader>
 
             <div className="space-y-4 py-4">
+              {dialogError && (
+                <div className="flex items-start gap-2 rounded-xl bg-rose-50 p-3.5 text-xs text-rose-800 border border-rose-200 animate-in fade-in-50">
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                  <span className="font-semibold">{dialogError}</span>
+                </div>
+              )}
+
               {/* Vehicle Type */}
               <div className="space-y-1.5">
                 <Label htmlFor="vehicleType" className="text-xs font-semibold text-slate-700">
@@ -704,6 +724,11 @@ export default function VehiclesPage() {
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
+                  ) : compressingField === "vehiclePhoto" ? (
+                    <div className="border border-emerald-200 bg-emerald-50/60 rounded-xl p-3 text-center flex items-center justify-center gap-2 text-xs text-emerald-700">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Optimizing photo...</span>
+                    </div>
                   ) : (
                     <div
                       onClick={() => vehicleFileInputRef.current?.click()}
@@ -754,6 +779,11 @@ export default function VehiclesPage() {
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
+                  ) : compressingField === "numberPlatePhoto" ? (
+                    <div className="border border-emerald-200 bg-emerald-50/60 rounded-xl p-3 text-center flex items-center justify-center gap-2 text-xs text-emerald-700">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Optimizing photo...</span>
+                    </div>
                   ) : (
                     <div
                       onClick={() => plateFileInputRef.current?.click()}
@@ -803,6 +833,11 @@ export default function VehiclesPage() {
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
+                    </div>
+                  ) : compressingField === "drivingLicensePhoto" ? (
+                    <div className="border border-emerald-200 bg-emerald-50/60 rounded-xl p-3 text-center flex items-center justify-center gap-2 text-xs text-emerald-700">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Optimizing photo...</span>
                     </div>
                   ) : (
                     <div
