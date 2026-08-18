@@ -390,6 +390,123 @@ export default function OfferRidePage() {
 
   const isPickup = formData.rideType === "pickup";
 
+  const isEmployeeApproved =
+    session?.user?.role === "admin" ||
+    session?.user?.isApproved === true ||
+    session?.user?.verificationStatus === "approved";
+
+  const isVehicleApproved =
+    session?.user?.role === "admin" ||
+    (selectedVehicle &&
+      (selectedVehicle.isApproved === true || selectedVehicle.verificationStatus === "approved"));
+
+  const renderRideSummaryCard = () => (
+    <Card className="border-slate-200 shadow-sm bg-slate-900 text-white rounded-2xl sticky top-20">
+      <CardHeader className="pb-3 border-b border-slate-800">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-bold text-white">Ride Summary</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <Badge className="bg-amber-400 text-slate-950 font-bold text-[10px]">
+              {isPickup ? "🌅 Pickup" : "🌆 Drop"}
+            </Badge>
+            <Badge className="bg-emerald-500 text-slate-950 font-bold text-[10px]">
+              {selectedVehicle?.vehicleType || "Car"}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4 pt-4 text-xs">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Origin</span>
+              <span className="font-bold text-white">{formData.startingLocation || "Starting Location"}</span>
+            </div>
+          </div>
+
+          {stops.map((s, idx) => (
+            <div key={idx} className="flex items-center gap-2 ml-1 pl-2 border-l border-slate-700 text-slate-300">
+              <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+              <span className="text-[11px] truncate">
+                {isPickup ? "Pickup" : "Drop"}: {s.name} (₹{s.price})
+              </span>
+            </div>
+          ))}
+
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-blue-400 shrink-0" />
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Destination</span>
+              <span className="font-bold text-white">{formData.destination || "Destination"}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-800 pt-3 space-y-2 text-slate-300">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">Total Distance:</span>
+            <span className="font-bold text-emerald-400">
+              {routeResult?.formattedDistance || "Calculating..."}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">Estimated Duration:</span>
+            <span className="font-semibold text-white">
+              {routeResult?.formattedDuration || "Calculating..."}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">Departure:</span>
+            <span className="font-semibold text-white">
+              {formData.departureDate} at {formData.departureTime}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">Seats Offered:</span>
+            <span className="font-bold text-emerald-400">{formData.availableSeats} Seats</span>
+          </div>
+        </div>
+
+        {!isEmployeeApproved && (
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 p-2.5 rounded-xl text-[11px] pt-2">
+            <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <span>Your account is pending Admin approval. You can offer rides once approved by Admin (Vathsan).</span>
+          </div>
+        )}
+
+        {!isVehicleApproved && isEmployeeApproved && (
+          <div className="flex items-start gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2.5 rounded-xl text-[11px] pt-2">
+            <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>Selected vehicle is awaiting Admin verification. Once approved by Admin, you can publish rides.</span>
+          </div>
+        )}
+
+        <div className="border-t border-slate-800 pt-3">
+          <Button
+            type="submit"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-md transition-colors h-11 text-xs"
+            disabled={isSubmitting || !isEmployeeApproved || !isVehicleApproved}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Posting Ride...
+              </>
+            ) : !isEmployeeApproved ? (
+              "🔒 Account Pending Admin Approval"
+            ) : !isVehicleApproved ? (
+              "🔒 Vehicle Pending Admin Approval"
+            ) : (
+              `Post ${isPickup ? "Pickup" : "Drop"} Ride`
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300 max-w-6xl mx-auto">
       {/* Header */}
@@ -437,403 +554,8 @@ export default function OfferRidePage() {
           </Link>
         </Card>
       ) : (
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main Unified Box (7 Cols on large screen) */}
-          <div className="lg:col-span-7 space-y-6">
-            <Card className="border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
-              <CardHeader className="border-b border-slate-100 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <Car className="h-5 w-5 text-emerald-600" /> Post Campus Ride
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-500 mt-0.5">
-                      Configure commute direction, choose your vehicle, and set pickup points with fares
-                    </CardDescription>
-                  </div>
-
-                  {selectedVehicle && (
-                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-bold text-xs">
-                      {selectedVehicle.vehicleType}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-6 space-y-6">
-                {/* 1. Commute Direction & Vehicle */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Commute Direction */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="rideType" className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
-                      <span>Commute Direction</span>
-                      <span className="text-[10px] text-emerald-700 font-medium lowercase font-mono">
-                        {isPickup ? "morning pickup" : "evening drop"}
-                      </span>
-                    </Label>
-                    <Select
-                      value={formData.rideType}
-                      onValueChange={(val: "pickup" | "drop") => handleRideTypeChange(val)}
-                    >
-                      <SelectTrigger id="rideType" className="rounded-xl h-11 text-xs font-semibold">
-                        <SelectValue placeholder="Select Pickup or Drop" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pickup">
-                          <div className="flex items-center gap-2">
-                            <Sun className="h-4 w-4 text-amber-500" />
-                            <span className="font-bold">Pickup</span>
-                            <span className="text-slate-400 text-[11px]">(Morning to Campus)</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="drop">
-                          <div className="flex items-center gap-2">
-                            <Moon className="h-4 w-4 text-indigo-500" />
-                            <span className="font-bold">Drop</span>
-                            <span className="text-slate-400 text-[11px]">(Evening from Campus)</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Vehicle */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="vehicleId" className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                      Vehicle (Car or Bike)
-                    </Label>
-                    <Select
-                      value={formData.vehicleId}
-                      onValueChange={handleVehicleChange}
-                    >
-                      <SelectTrigger id="vehicleId" className="rounded-xl h-11 text-xs">
-                        <SelectValue placeholder="Select vehicle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicles.map((v) => {
-                          const isApproved = v.isApproved || v.verificationStatus === "approved" || session?.user?.role === "admin";
-                          return (
-                            <SelectItem key={v._id} value={v._id}>
-                              {v.vehicleModel} ({v.registrationNumber}) — {v.vehicleType} {!isApproved ? "⚠️ (Pending Admin Approval)" : "✓ Verified"}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Unapproved Employee or Vehicle Warning Banner */}
-                {session?.user?.role !== "admin" && session?.user?.verificationStatus === "pending" && (
-                  <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-amber-900 text-xs animate-in fade-in-50">
-                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block font-bold">Employee Profile Pending Approval</strong>
-                      Your account is awaiting Admin approval. You can prepare your commute routes, and they will be publishable once verified by Admin.
-                    </div>
-                  </div>
-                )}
-
-                {selectedVehicle && !selectedVehicle.isApproved && selectedVehicle.verificationStatus !== "approved" && session?.user?.role !== "admin" && (
-                  <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 p-3.5 border border-rose-200 text-rose-900 text-xs animate-in fade-in-50">
-                    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block font-bold">Vehicle Awaiting Admin Verification</strong>
-                      This vehicle is pending verification by Admin in the fleet management hub. You can publish rides once Admin approves this vehicle.
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Route Origin & Destination with Autocomplete & Map Pick */}
-                <div className="space-y-3 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                      Commute Route ({isPickup ? "To Campus" : "From Campus"})
-                    </Label>
-                    <button
-                      type="button"
-                      onClick={handleSwapRoute}
-                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 hover:underline"
-                    >
-                      <ArrowRightLeft className="h-3 w-3" /> Swap Direction
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Origin */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 text-emerald-600" />
-                          {isPickup ? "Starting Origin (Your Area)" : "Campus Origin"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setMapPickingTarget("origin")}
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
-                            mapPickingTarget === "origin"
-                              ? "bg-emerald-600 text-white"
-                              : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                          }`}
-                        >
-                          {mapPickingTarget === "origin" ? "Click Map..." : "Pick on Map"}
-                        </button>
-                      </div>
-
-                      <LocationSearchInput
-                        id="startingLocation"
-                        placeholder={isPickup ? "Search starting area (e.g. Tambaram)" : "Tech Mahindra Campus"}
-                        value={formData.startingLocation}
-                        onChange={(loc) => {
-                          setFormData((prev) => ({ ...prev, startingLocation: loc.address.split(",")[0] }));
-                          setStartPoint({
-                            name: loc.address.split(",")[0],
-                            address: loc.address,
-                            latitude: loc.latitude,
-                            longitude: loc.longitude,
-                          });
-                        }}
-                        hasError={Boolean(fieldErrors.startingLocation)}
-                        required
-                      />
-                      {fieldErrors.startingLocation && (
-                        <p className="text-xs text-rose-600">{fieldErrors.startingLocation}</p>
-                      )}
-                    </div>
-
-                    {/* Destination */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                          <Building2 className="h-3.5 w-3.5 text-slate-500" />
-                          {isPickup ? "Campus Destination" : "Final Drop Destination (Your Area)"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setMapPickingTarget("destination")}
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
-                            mapPickingTarget === "destination"
-                              ? "bg-emerald-600 text-white"
-                              : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                          }`}
-                        >
-                          {mapPickingTarget === "destination" ? "Click Map..." : "Pick on Map"}
-                        </button>
-                      </div>
-
-                      <LocationSearchInput
-                        id="destination"
-                        placeholder={isPickup ? "Tech Mahindra SEZ Campus" : "Search destination area"}
-                        value={formData.destination}
-                        onChange={(loc) => {
-                          setFormData((prev) => ({ ...prev, destination: loc.address.split(",")[0] }));
-                          setEndPoint({
-                            name: loc.address.split(",")[0],
-                            address: loc.address,
-                            latitude: loc.latitude,
-                            longitude: loc.longitude,
-                          });
-                        }}
-                        hasError={Boolean(fieldErrors.destination)}
-                        required
-                      />
-                      {fieldErrors.destination && (
-                        <p className="text-xs text-rose-600">{fieldErrors.destination}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Schedule & Seats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" /> Departure Date
-                    </span>
-                    <Input
-                      id="departureDate"
-                      type="date"
-                      value={formData.departureDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, departureDate: e.target.value }))}
-                      className="rounded-xl h-10 text-xs"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-slate-400" /> Departure Time
-                    </span>
-                    <Input
-                      id="departureTime"
-                      placeholder={isPickup ? "e.g. 08:30 AM" : "e.g. 06:00 PM"}
-                      value={formData.departureTime}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, departureTime: e.target.value }))}
-                      className="rounded-xl h-10 text-xs"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-slate-400" /> Available Seats
-                    </span>
-                    <Input
-                      id="availableSeats"
-                      type="number"
-                      min={1}
-                      max={selectedVehicle?.seatingCapacity || 4}
-                      value={formData.availableSeats}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          availableSeats: parseInt(e.target.value) || 1,
-                        }))
-                      }
-                      className="rounded-xl h-10 text-xs"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* 4. Route Stops with Nominatim Autocomplete & Map Pick */}
-                <div className="space-y-3 pt-2 border-t border-slate-100">
-                  <div>
-                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                      <MapPinned className="h-4 w-4 text-emerald-600" />
-                      {isPickup ? "Route Pickup Points & Fare (₹)" : "Route Drop Points & Fare (₹)"}
-                    </Label>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {isPickup
-                        ? "Locations along your morning route where colleagues can get picked up to reach campus"
-                        : "Locations along your evening route where colleagues can get dropped off after office hours"}
-                    </p>
-                  </div>
-
-                  {/* List of current stops */}
-                  {stops.length > 0 && (
-                    <div className="space-y-2">
-                      {stops.map((stop, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs hover:border-slate-300 transition-colors"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                              {idx + 1}
-                            </span>
-                            <div>
-                              <span className="font-semibold text-slate-800">{stop.name}</span>
-                              <span className="text-[10px] text-slate-400 block truncate max-w-[240px]">
-                                {stop.address || (isPickup ? "Morning Pickup Point" : "Evening Drop Point")}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1 font-bold text-emerald-700 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                              <span className="text-[11px]">₹</span>
-                              <input
-                                type="number"
-                                min={0}
-                                value={stop.price}
-                                onChange={(e) => handleStopPriceChange(idx, Number(e.target.value))}
-                                className="w-14 text-xs text-right font-bold focus:outline-hidden bg-transparent"
-                              />
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveStop(idx)}
-                              className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-                              title="Remove Stop"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add new stop inline form */}
-                  <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200/70 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-emerald-900 block">
-                        Add {isPickup ? "Pickup Location (Morning)" : "Drop Location (Evening)"} along Route
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMapPickingTarget("newStop")}
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
-                          mapPickingTarget === "newStop"
-                            ? "bg-emerald-600 text-white"
-                            : "text-emerald-800 bg-white border border-emerald-300 hover:bg-emerald-100"
-                        }`}
-                      >
-                        {mapPickingTarget === "newStop" ? "Click Map..." : "Pick on Map"}
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                      <div className="sm:col-span-3">
-                        <LocationSearchInput
-                          placeholder={isPickup ? "Search pickup spot (e.g. Chromepet)" : "Search drop spot"}
-                          value={newStopName}
-                          onChange={(loc) => {
-                            setNewStopName(loc.address.split(",")[0]);
-                            setNewStopAddress(loc.address);
-                            setNewStopLat(loc.latitude);
-                            setNewStopLng(loc.longitude);
-                          }}
-                          className="h-9"
-                        />
-                      </div>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-2 text-xs text-slate-400">₹</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          placeholder="Fare"
-                          value={newStopPrice}
-                          onChange={(e) => setNewStopPrice(Number(e.target.value))}
-                          className="pl-6 text-xs rounded-xl bg-white h-9"
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={handleAddStop}
-                      className="w-full text-xs font-bold border-emerald-300 text-emerald-800 hover:bg-emerald-100/50 rounded-xl gap-1.5 h-8"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Add {isPickup ? "Pickup Point" : "Drop Point"}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* 5. Additional Information */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                    Additional Instructions / Trip Notes (Optional)
-                  </Label>
-                  <Input
-                    id="notes"
-                    placeholder="e.g. AC will be on, leaving sharp from campus gate 2, flexible on return timing..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                    className="rounded-xl text-xs h-10"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Map & Summary Sidebar (5 Cols on large screen) */}
-          <div className="lg:col-span-5 space-y-4">
-            {/* Interactive OpenStreetMap Container */}
+        <form onSubmit={handleSubmit} className="flex flex-col lg:grid lg:grid-cols-12 gap-6">
+          <div className="order-1 lg:order-2 lg:col-span-5 space-y-4">
             <Card className="border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
               <CardHeader className="pb-3 pt-4 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -880,123 +602,351 @@ export default function OfferRidePage() {
               </CardContent>
             </Card>
 
-            {/* Ride Summary & Post Action Card */}
-            <Card className="border-slate-200 shadow-sm bg-slate-900 text-white rounded-2xl sticky top-20">
-              <CardHeader className="pb-3 border-b border-slate-800">
+            <div className="hidden lg:block">
+              {renderRideSummaryCard()}
+            </div>
+          </div>
+
+          <div className="order-2 lg:order-1 lg:col-span-7 space-y-6">
+            <Card className="border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-bold text-white">
-                    Ride Summary
-                  </CardTitle>
-                  <div className="flex items-center gap-1.5">
-                    <Badge className="bg-amber-400 text-slate-950 font-bold text-[10px]">
-                      {isPickup ? "🌅 Pickup" : "🌆 Drop"}
-                    </Badge>
-                    <Badge className="bg-emerald-500 text-slate-950 font-bold text-[10px]">
-                      {selectedVehicle?.vehicleType || "Car"}
-                    </Badge>
+                  <div>
+                    <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Car className="h-5 w-5 text-emerald-600" /> Post Campus Ride
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500 mt-0.5">
+                      Configure commute direction, choose your vehicle, and set pickup points with fares
+                    </CardDescription>
                   </div>
+
+                  {selectedVehicle && (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-bold text-xs">
+                      {selectedVehicle.vehicleType}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4 pt-4 text-xs">
-                {/* Route visualization */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Origin</span>
-                      <span className="font-bold text-white">{formData.startingLocation || "Starting Location"}</span>
-                    </div>
-                  </div>
-
-                  {stops.map((s, idx) => (
-                    <div key={idx} className="flex items-center gap-2 ml-1 pl-2 border-l border-slate-700 text-slate-300">
-                      <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                      <span className="text-[11px] truncate">
-                        {isPickup ? "Pickup" : "Drop"}: {s.name} (₹{s.price})
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rideType" className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
+                      <span>Commute Direction</span>
+                      <span className="text-[10px] text-emerald-700 font-medium lowercase font-mono">
+                        {isPickup ? "morning pickup" : "evening drop"}
                       </span>
-                    </div>
-                  ))}
+                    </Label>
+                    <Select
+                      value={formData.rideType}
+                      onValueChange={(val: "pickup" | "drop") => handleRideTypeChange(val)}
+                    >
+                      <SelectTrigger id="rideType" className="rounded-xl h-11 text-xs font-semibold">
+                        <SelectValue placeholder="Select Pickup or Drop" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pickup">
+                          <div className="flex items-center gap-2">
+                            <Sun className="h-4 w-4 text-amber-500" />
+                            <span className="font-bold">Pickup</span>
+                            <span className="text-slate-400 text-[11px]">(Morning to Campus)</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="drop">
+                          <div className="flex items-center gap-2">
+                            <Moon className="h-4 w-4 text-indigo-500" />
+                            <span className="font-bold">Drop</span>
+                            <span className="text-slate-400 text-[11px]">(Evening from Campus)</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-400 shrink-0" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="vehicleId" className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                      Vehicle (Car or Bike)
+                    </Label>
+                    <Select
+                      value={formData.vehicleId}
+                      onValueChange={handleVehicleChange}
+                    >
+                      <SelectTrigger id="vehicleId" className="rounded-xl h-11 text-xs">
+                        <SelectValue placeholder="Select vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicles.map((v) => {
+                          const isApproved = v.isApproved || v.verificationStatus === "approved" || session?.user?.role === "admin";
+                          return (
+                            <SelectItem key={v._id} value={v._id}>
+                              {v.vehicleModel} ({v.registrationNumber}) — {v.vehicleType} {!isApproved ? "⚠️ (Pending Admin Approval)" : "✓ Verified"}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                      Commute Route ({isPickup ? "To Campus" : "From Campus"})
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={handleSwapRoute}
+                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 hover:underline"
+                    >
+                      <ArrowRightLeft className="h-3 w-3" /> Swap Direction
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Starting Location (Origin)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMapPickingTarget(mapPickingTarget === "origin" ? null : "origin")}
+                        className={`text-[11px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors ${
+                          mapPickingTarget === "origin"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        }`}
+                      >
+                        <Crosshair className="h-3 w-3" />
+                        {mapPickingTarget === "origin" ? "Cancel Map Pick" : "Pick on Map"}
+                      </button>
+                    </div>
+                    <LocationSearchInput
+                      value={formData.startingLocation}
+                      placeholder="e.g. Tambaram Sanatorium, Chennai"
+                      onSelect={(loc) => {
+                        setFormData((prev) => ({ ...prev, startingLocation: loc.address }));
+                        setStartPoint({ name: loc.address, address: loc.address, latitude: loc.latitude, longitude: loc.longitude });
+                      }}
+                      error={fieldErrors.startingLocation}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Destination</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMapPickingTarget(mapPickingTarget === "destination" ? null : "destination")}
+                        className={`text-[11px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors ${
+                          mapPickingTarget === "destination"
+                            ? "bg-blue-600 text-white"
+                            : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        }`}
+                      >
+                        <Crosshair className="h-3 w-3" />
+                        {mapPickingTarget === "destination" ? "Cancel Map Pick" : "Pick on Map"}
+                      </button>
+                    </div>
+                    <LocationSearchInput
+                      value={formData.destination}
+                      placeholder="e.g. Tech Mahindra SEZ Campus, OMR, Sholinganallur"
+                      onSelect={(loc) => {
+                        setFormData((prev) => ({ ...prev, destination: loc.address }));
+                        setEndPoint({ name: loc.address, address: loc.address, latitude: loc.latitude, longitude: loc.longitude });
+                      }}
+                      error={fieldErrors.destination}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Destination</span>
-                      <span className="font-bold text-white">{formData.destination || "Destination"}</span>
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                        Intermediary Pickup / Drop Stops
+                      </Label>
+                      <p className="text-[11px] text-slate-500">
+                        Add key junction points along the route with suggested seat fares
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[11px] font-semibold">
+                      {stops.length} Stops Added
+                    </Badge>
+                  </div>
+
+                  {stops.length > 0 && (
+                    <div className="space-y-2">
+                      {stops.map((stop, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs gap-3"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-slate-900 block truncate">
+                                {stop.name}
+                              </span>
+                              {stop.address && stop.address !== stop.name && (
+                                <span className="text-[10px] text-slate-500 block truncate">
+                                  {stop.address}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                              <span className="text-slate-500 text-[10px]">₹</span>
+                              <input
+                                type="number"
+                                value={stop.price}
+                                onChange={(e) => handleStopPriceChange(idx, Number(e.target.value) || 0)}
+                                className="w-12 text-xs font-bold text-slate-800 focus:outline-none"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveStop(idx)}
+                              className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="p-3.5 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <Plus className="h-3.5 w-3.5 text-emerald-700" />
+                        <span>Add Route Stop</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMapPickingTarget(mapPickingTarget === "newStop" ? null : "newStop")}
+                        className={`text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors ${
+                          mapPickingTarget === "newStop"
+                            ? "bg-emerald-700 text-white"
+                            : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                        }`}
+                      >
+                        <Crosshair className="h-3 w-3" />
+                        {mapPickingTarget === "newStop" ? "Cancel Map Pick" : "Pin on Map"}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="sm:col-span-2">
+                        <LocationSearchInput
+                          value={newStopName}
+                          placeholder="Search stop name (e.g. Kathipara)"
+                          onSelect={(loc) => {
+                            setNewStopName(loc.address.split(",")[0]);
+                            setNewStopAddress(loc.address);
+                            setNewStopLat(loc.latitude);
+                            setNewStopLng(loc.longitude);
+                          }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-2.5 top-2.5 text-xs text-slate-400">₹</span>
+                          <Input
+                            type="number"
+                            placeholder="Fare"
+                            value={newStopPrice}
+                            onChange={(e) => setNewStopPrice(Number(e.target.value))}
+                            className="pl-6 rounded-xl text-xs h-9"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleAddStop}
+                          disabled={!newStopName.trim()}
+                          className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs rounded-xl h-9 px-3"
+                        >
+                          Add
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-800 pt-3 space-y-2 text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Total Distance:</span>
-                    <span className="font-bold text-emerald-400">
-                      {routeResult?.formattedDistance || "Calculating..."}
-                    </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="departureDate" className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Departure Date
+                    </Label>
+                    <Input
+                      id="departureDate"
+                      type="date"
+                      value={formData.departureDate}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, departureDate: e.target.value }))}
+                      className="rounded-xl h-10 text-xs"
+                      required
+                    />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Estimated Duration:</span>
-                    <span className="font-semibold text-white">
-                      {routeResult?.formattedDuration || "Calculating..."}
-                    </span>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="departureTime" className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Departure Time
+                    </Label>
+                    <Input
+                      id="departureTime"
+                      placeholder="e.g. 08:30 AM"
+                      value={formData.departureTime}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, departureTime: e.target.value }))}
+                      className="rounded-xl h-10 text-xs"
+                      required
+                    />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Departure:</span>
-                    <span className="font-semibold text-white">
-                      {formData.departureDate} at {formData.departureTime}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Seats Offered:</span>
-                    <span className="font-bold text-emerald-400">{formData.availableSeats} Seats</span>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="availableSeats" className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Available Seats
+                    </Label>
+                    <Input
+                      id="availableSeats"
+                      type="number"
+                      min={1}
+                      max={selectedVehicle?.seatingCapacity || 6}
+                      value={formData.availableSeats}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, availableSeats: Number(e.target.value) }))}
+                      className="rounded-xl h-10 text-xs"
+                      required
+                    />
                   </div>
                 </div>
 
-                {/* Inline Warning for Unapproved Employee or Vehicle */}
-                {session?.user?.role !== "admin" && session?.user?.verificationStatus === "pending" && !session?.user?.isApproved && (
-                  <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 p-2.5 rounded-xl text-[11px] pt-2">
-                    <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span>Your account is pending Admin approval. You can offer rides once approved by Admin (Vathsan).</span>
-                  </div>
-                )}
-
-                {selectedVehicle && !selectedVehicle.isApproved && selectedVehicle.verificationStatus !== "approved" && session?.user?.role !== "admin" && (
-                  <div className="flex items-start gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2.5 rounded-xl text-[11px] pt-2">
-                    <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-                    <span>Selected vehicle is awaiting Admin verification. Once approved by Admin, you can publish rides.</span>
-                  </div>
-                )}
-
-                <div className="border-t border-slate-800 pt-3">
-                  <Button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-md transition-colors h-11 text-xs"
-                    disabled={
-                      isSubmitting ||
-                      (session?.user?.role !== "admin" &&
-                        (!session?.user?.isApproved && session?.user?.verificationStatus === "pending")) ||
-                      (session?.user?.role !== "admin" &&
-                        selectedVehicle &&
-                        !selectedVehicle.isApproved &&
-                        selectedVehicle.verificationStatus !== "approved")
-                    }
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Posting Ride...
-                      </>
-                    ) : session?.user?.role !== "admin" && (!session?.user?.isApproved && session?.user?.verificationStatus === "pending") ? (
-                      "🔒 Account Pending Admin Approval"
-                    ) : session?.user?.role !== "admin" && selectedVehicle && !selectedVehicle.isApproved && selectedVehicle.verificationStatus !== "approved" ? (
-                      "🔒 Vehicle Pending Admin Approval"
-                    ) : (
-                      `Post ${isPickup ? "Pickup" : "Drop"} Ride`
-                    )}
-                  </Button>
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Driver Notes & Route Instructions (Optional)
+                  </Label>
+                  <Input
+                    id="notes"
+                    placeholder="e.g. AC will be on, leaving sharp from campus gate"
+                    value={formData.notes}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                    className="rounded-xl text-xs"
+                  />
                 </div>
               </CardContent>
             </Card>
+
+            <div className="block lg:hidden">
+              {renderRideSummaryCard()}
+            </div>
           </div>
         </form>
       )}
