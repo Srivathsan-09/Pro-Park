@@ -179,6 +179,25 @@ export const authOptions: NextAuthOptions = {
         session.user.phone = token.phone as string | undefined;
         session.user.verificationStatus = (token.verificationStatus as "pending" | "approved" | "rejected") || "pending";
         session.user.isApproved = Boolean(token.isApproved);
+
+        // Dynamically verify approval status in MongoDB Atlas on every session check
+        if (session.user.email) {
+          try {
+            await connectToDatabase();
+            const liveUser = await User.findOne({ email: session.user.email.toLowerCase().trim() })
+              .select("isApproved verificationStatus role name employeeId");
+            if (liveUser) {
+              const isAdmin = liveUser.role === "admin" || session.user.email.toLowerCase().trim() === "srimana2006@gmail.com";
+              session.user.role = isAdmin ? "admin" : "employee";
+              session.user.isApproved = isAdmin || Boolean(liveUser.isApproved);
+              session.user.verificationStatus = isAdmin ? "approved" : (liveUser.verificationStatus || "pending");
+              if (liveUser.name) session.user.name = liveUser.name;
+              if (liveUser.employeeId) session.user.employeeId = liveUser.employeeId;
+            }
+          } catch (e) {
+            console.error("Session dynamic sync error:", e);
+          }
+        }
       }
       return session;
     },

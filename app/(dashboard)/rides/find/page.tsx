@@ -790,6 +790,17 @@ export default function FindRidePage() {
                     className="rounded-xl text-xs"
                   />
                 </div>
+
+                {/* Warning for unapproved employee */}
+                {session?.user?.role !== "admin" && (!session?.user?.isApproved && session?.user?.verificationStatus === "pending") && (
+                  <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-amber-900 text-xs animate-in fade-in-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">Account Pending Admin Approval</strong>
+                      Your employee account is awaiting approval by Admin (Vathsan). You will be able to send ride requests to drivers once approved.
+                    </div>
+                  </div>
+                )}
               </div>
 
               <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100">
@@ -805,13 +816,21 @@ export default function FindRidePage() {
                 <Button
                   type="submit"
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs gap-1.5"
-                  disabled={isSubmittingBooking || selectedRide.availableSeats === 0}
+                  disabled={
+                    isSubmittingBooking ||
+                    selectedRide.availableSeats === 0 ||
+                    (session?.user?.role !== "admin" &&
+                      (!session?.user?.isApproved && session?.user?.verificationStatus === "pending"))
+                  }
                 >
                   {isSubmittingBooking ? (
                     <>
                       <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                       Sending Request...
                     </>
+                  ) : session?.user?.role !== "admin" &&
+                    (!session?.user?.isApproved && session?.user?.verificationStatus === "pending") ? (
+                    "🔒 Awaiting Admin Approval"
                   ) : (
                     <>
                       <CheckCircle className="h-3.5 w-3.5" /> Send Request to Driver

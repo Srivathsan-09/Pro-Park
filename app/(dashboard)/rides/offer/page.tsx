@@ -952,17 +952,44 @@ export default function OfferRidePage() {
                   </div>
                 </div>
 
+                {/* Inline Warning for Unapproved Employee or Vehicle */}
+                {session?.user?.role !== "admin" && session?.user?.verificationStatus === "pending" && !session?.user?.isApproved && (
+                  <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 p-2.5 rounded-xl text-[11px] pt-2">
+                    <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span>Your account is pending Admin approval. You can offer rides once approved by Admin (Vathsan).</span>
+                  </div>
+                )}
+
+                {selectedVehicle && !selectedVehicle.isApproved && selectedVehicle.verificationStatus !== "approved" && session?.user?.role !== "admin" && (
+                  <div className="flex items-start gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2.5 rounded-xl text-[11px] pt-2">
+                    <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                    <span>Selected vehicle is awaiting Admin verification. Once approved by Admin, you can publish rides.</span>
+                  </div>
+                )}
+
                 <div className="border-t border-slate-800 pt-3">
                   <Button
                     type="submit"
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-md transition-colors h-11 text-xs"
-                    disabled={isSubmitting}
+                    disabled={
+                      isSubmitting ||
+                      (session?.user?.role !== "admin" &&
+                        (!session?.user?.isApproved && session?.user?.verificationStatus === "pending")) ||
+                      (session?.user?.role !== "admin" &&
+                        selectedVehicle &&
+                        !selectedVehicle.isApproved &&
+                        selectedVehicle.verificationStatus !== "approved")
+                    }
                   >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Posting Ride...
                       </>
+                    ) : session?.user?.role !== "admin" && (!session?.user?.isApproved && session?.user?.verificationStatus === "pending") ? (
+                      "🔒 Account Pending Admin Approval"
+                    ) : session?.user?.role !== "admin" && selectedVehicle && !selectedVehicle.isApproved && selectedVehicle.verificationStatus !== "approved" ? (
+                      "🔒 Vehicle Pending Admin Approval"
                     ) : (
                       `Post ${isPickup ? "Pickup" : "Drop"} Ride`
                     )}
