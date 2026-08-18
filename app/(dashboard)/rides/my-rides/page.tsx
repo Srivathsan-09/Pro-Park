@@ -675,69 +675,71 @@ export default function MyRidesPage() {
           />
         ) : (
           <div className="space-y-4">
-            {bookedRides.map((booking) => {
-              const ride = booking.ride;
-              const isLive = ride.status === "in_progress";
-              const isAccepted = booking.status === "accepted";
+            {bookedRides
+              .filter((booking) => Boolean(booking && booking.ride && booking.ride.driver))
+              .map((booking) => {
+                const ride = booking.ride;
+                const isLive = ride.status === "in_progress";
+                const isAccepted = booking.status === "accepted";
 
-              return (
-                <Card
-                  key={booking._id}
-                  className={`border-slate-200 bg-white shadow-sm rounded-2xl overflow-hidden ${
-                    isLive && isAccepted ? "ring-2 ring-emerald-500 border-emerald-300" : ""
-                  }`}
-                >
-                  <CardHeader className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-base font-bold text-slate-900">
-                          {ride.startingLocation} <ArrowRight className="h-3.5 w-3.5 text-slate-400" /> {ride.destination}
-                        </CardTitle>
-                        <Badge className="bg-slate-900 text-white font-bold text-[10px]">
-                          {ride.vehicleType}
-                        </Badge>
+                return (
+                  <Card
+                    key={booking._id}
+                    className={`border-slate-200 bg-white shadow-sm rounded-2xl overflow-hidden ${
+                      isLive && isAccepted ? "ring-2 ring-emerald-500 border-emerald-300" : ""
+                    }`}
+                  >
+                    <CardHeader className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base font-bold text-slate-900">
+                            {ride.startingLocation} <ArrowRight className="h-3.5 w-3.5 text-slate-400" /> {ride.destination}
+                          </CardTitle>
+                          <Badge className="bg-slate-900 text-white font-bold text-[10px]">
+                            {ride.vehicleType}
+                          </Badge>
+                        </div>
+                        <CardDescription className="text-xs text-slate-500 mt-0.5">
+                          Driver: <strong>{ride.driver?.name || "Colleague"}</strong> ({ride.driver?.companyName || "Tech Mahindra"}) • Plate: {ride.vehicle?.registrationNumber || "Campus Vehicle"}
+                        </CardDescription>
                       </div>
-                      <CardDescription className="text-xs text-slate-500 mt-0.5">
-                        Driver: <strong>{ride.driver.name}</strong> ({ride.driver.companyName || "Tech Mahindra"}) • Plate: {ride.vehicle.registrationNumber}
-                      </CardDescription>
-                    </div>
 
-                    <div className="flex items-center gap-2 text-xs">
-                      {isLive && isAccepted ? (
-                        <Badge className="bg-emerald-600 text-white font-bold text-xs gap-1.5 animate-pulse">
-                          <Radio className="h-3 w-3 animate-ping" /> Driver is on the way!
-                        </Badge>
-                      ) : (
-                        <Badge
-                          className={`text-[10px] font-bold ${
-                            isAccepted
-                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : booking.status === "pending"
-                              ? "bg-amber-100 text-amber-800 border-amber-300"
-                              : "bg-rose-100 text-rose-800"
-                          }`}
-                        >
-                          {isAccepted ? "✓ Booking Confirmed" : booking.status === "pending" ? "⏳ Awaiting Driver" : "✕ " + booking.status}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2 text-xs">
+                        {isLive && isAccepted ? (
+                          <Badge className="bg-emerald-600 text-white font-bold text-xs gap-1.5 animate-pulse">
+                            <Radio className="h-3 w-3 animate-ping" /> Driver is on the way!
+                          </Badge>
+                        ) : (
+                          <Badge
+                            className={`text-[10px] font-bold ${
+                              isAccepted
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                : booking.status === "pending"
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-rose-100 text-rose-800"
+                            }`}
+                          >
+                            {isAccepted ? "✓ Booking Confirmed" : booking.status === "pending" ? "⏳ Awaiting Driver" : "✕ " + booking.status}
+                          </Badge>
+                        )}
 
-                      {/* PASSENGER TRACK DRIVER LIVE BUTTON */}
-                      {isAccepted && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleOpenLiveTracking(ride)}
-                          className={`${
-                            isLive
-                              ? "bg-emerald-600 hover:bg-emerald-700 text-white animate-bounce"
-                              : "bg-slate-900 hover:bg-slate-800 text-white"
-                          } font-bold text-xs rounded-xl shadow-xs gap-1.5 h-8`}
-                        >
-                          <Navigation className="h-3.5 w-3.5" />
-                          {isLive ? "📍 Track Driver Live GPS" : "View Route on Map"}
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
+                        {/* PASSENGER TRACK DRIVER LIVE BUTTON */}
+                        {isAccepted && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleOpenLiveTracking(ride)}
+                            className={`${
+                              isLive
+                                ? "bg-emerald-600 hover:bg-emerald-700 text-white animate-bounce"
+                                : "bg-slate-900 hover:bg-slate-800 text-white"
+                            } font-bold text-xs rounded-xl shadow-xs gap-1.5 h-8`}
+                          >
+                            <Navigation className="h-3.5 w-3.5" />
+                            {isLive ? "📍 Track Driver Live GPS" : "View Route on Map"}
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
 
                   <CardContent className="p-4 sm:p-5 space-y-3 text-xs">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

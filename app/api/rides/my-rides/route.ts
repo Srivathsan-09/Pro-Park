@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     }));
 
     // 2. Fetch rides requested / booked by user (Passenger view)
-    const bookedRides = await RideRequest.find({ passenger: session.user.id })
+    const rawBookedRides = await RideRequest.find({ passenger: session.user.id })
       .populate({
         path: "ride",
         populate: [
@@ -62,10 +62,14 @@ export async function GET(req: NextRequest) {
       .sort({ createdAt: -1 })
       .lean();
 
+    const validBookedRides = rawBookedRides.filter(
+      (b) => b && b.ride && (b.ride as any).driver && (b.ride as any).vehicle
+    );
+
     return NextResponse.json({
       success: true,
       offeredRides: enrichedOfferedRides,
-      bookedRides,
+      bookedRides: validBookedRides,
     });
   } catch (error: unknown) {
     console.error("❌ My Rides GET API Error:", error);
