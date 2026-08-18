@@ -369,79 +369,131 @@ export default function FindRidePage() {
         </div>
       )}
 
-      {/* Search & Filter Bar */}
-      <Card className="border-slate-200 shadow-sm bg-white rounded-2xl">
-        <CardContent className="p-4 sm:p-5">
-          <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-            {/* Direction Filter */}
-            <div>
-              <Select value={filterRideType} onValueChange={setFilterRideType}>
-                <SelectTrigger className="h-10 text-xs rounded-xl font-semibold">
-                  <SelectValue placeholder="All Commute Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All (Pickup & Drop)</SelectItem>
-                  <SelectItem value="pickup">🌅 Morning Pickup (To Campus)</SelectItem>
-                  <SelectItem value="drop">🌆 Evening Drop (From Campus)</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Horizontal Search & Filter Bar */}
+      <Card className="border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
+        <CardContent className="p-3 sm:p-4 space-y-2.5">
+          {/* Commute Direction Quick Horizontal Pills */}
+          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterRideType("all");
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  filterRideType === "all"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                All Rides
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterRideType("pickup");
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg flex items-center gap-1 transition-all ${
+                  filterRideType === "pickup"
+                    ? "bg-amber-400 text-slate-950 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Sun className="h-3 w-3" /> Pickup
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterRideType("drop");
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg flex items-center gap-1 transition-all ${
+                  filterRideType === "drop"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Moon className="h-3 w-3" /> Drop
+              </button>
             </div>
 
-            {/* Origin */}
-            <div className="relative">
-              <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-emerald-600" />
-              <Input
-                placeholder="From (e.g. Tambaram)"
-                value={searchOrigin}
-                onChange={(e) => setSearchOrigin(e.target.value)}
-                className="pl-9 h-10 text-xs rounded-xl"
-              />
-            </div>
+            {(searchOrigin || searchDestination || filterType !== "all" || filterRideType !== "all" || filterDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchOrigin("");
+                  setSearchDestination("");
+                  setFilterType("all");
+                  setFilterRideType("all");
+                  setFilterDate("");
+                }}
+                className="text-[11px] font-semibold text-rose-600 hover:underline shrink-0 px-2"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
 
-            {/* Destination */}
-            <div className="relative">
-              <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="To (e.g. Tech Mahindra)"
-                value={searchDestination}
-                onChange={(e) => setSearchDestination(e.target.value)}
-                className="pl-9 h-10 text-xs rounded-xl"
-              />
-            </div>
+          {/* Unified Horizontal Search Form */}
+          <form onSubmit={handleSearchSubmit}>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 items-center">
+              {/* Origin (From) */}
+              <div className="col-span-1 lg:col-span-3 relative">
+                <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-emerald-600 shrink-0" />
+                <Input
+                  placeholder="From (e.g. Tambaram)"
+                  value={searchOrigin}
+                  onChange={(e) => setSearchOrigin(e.target.value)}
+                  className="pl-8 h-9 text-xs rounded-xl"
+                />
+              </div>
 
-            {/* Vehicle Type Filter */}
-            <div>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="h-10 text-xs rounded-xl">
-                  <SelectValue placeholder="All Vehicle Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Vehicles (Car & Bike)</SelectItem>
-                  <SelectItem value="Car">Car only</SelectItem>
-                  <SelectItem value="Bike">Bike only</SelectItem>
-                  <SelectItem value="SUV">SUV only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Destination (To) */}
+              <div className="col-span-1 lg:col-span-3 relative">
+                <Building2 className="absolute left-2.5 top-2.5 h-4 w-4 text-blue-600 shrink-0" />
+                <Input
+                  placeholder="To (e.g. Campus)"
+                  value={searchDestination}
+                  onChange={(e) => setSearchDestination(e.target.value)}
+                  className="pl-8 h-9 text-xs rounded-xl"
+                />
+              </div>
 
-            {/* Date */}
-            <div className="relative">
-              <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="pl-9 h-10 text-xs rounded-xl"
-              />
-            </div>
+              {/* Vehicle Type */}
+              <div className="col-span-1 lg:col-span-2">
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="h-9 text-xs rounded-xl">
+                    <SelectValue placeholder="All Vehicles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">🚗 All Vehicles</SelectItem>
+                    <SelectItem value="Car">Car only</SelectItem>
+                    <SelectItem value="Bike">Bike only</SelectItem>
+                    <SelectItem value="SUV">SUV only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Search Button */}
-            <Button
-              type="submit"
-              className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl gap-2"
-            >
-              <Search className="h-4 w-4" /> Search Rides
-            </Button>
+              {/* Date */}
+              <div className="col-span-1 lg:col-span-2 relative">
+                <Calendar className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                <Input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="pl-8 h-9 text-xs rounded-xl"
+                />
+              </div>
+
+              {/* Search Button */}
+              <div className="col-span-2 sm:col-span-2 md:col-span-4 lg:col-span-2">
+                <Button
+                  type="submit"
+                  className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl gap-1.5 shadow-xs"
+                >
+                  <Search className="h-3.5 w-3.5" /> Search
+                </Button>
+              </div>
+            </div>
           </form>
         </CardContent>
       </Card>

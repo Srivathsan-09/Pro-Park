@@ -29,6 +29,7 @@ import {
   Sun,
   Moon,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -314,6 +315,40 @@ export default function MyRidesPage() {
     }
   };
 
+  // Handle Driver Delete Offered Ride
+  const handleDeleteRide = async (rideId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this offered ride? Any coworker seat requests will be automatically cancelled."
+      )
+    ) {
+      return;
+    }
+
+    setActionLoadingId(rideId);
+    setActionSuccessMsg(null);
+    setActionErrorMsg(null);
+
+    try {
+      const res = await fetch(`/api/rides/${rideId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setActionSuccessMsg("Ride deleted successfully.");
+        fetchMyRides(true);
+      } else {
+        setActionErrorMsg(data.error || "Failed to delete ride.");
+      }
+    } catch (err) {
+      console.error("Delete ride error:", err);
+      setActionErrorMsg("Failed to delete ride. Please try again.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   // Handle Passenger Open Live Tracking Modal
   const handleOpenLiveTracking = async (ride: any) => {
     setTrackingModalRide(ride);
@@ -517,14 +552,48 @@ export default function MyRidesPage() {
                         </Badge>
                       )}
 
-                      {/* START RIDE / COMPLETE RIDE BUTTONS FOR DRIVER */}
+                      {/* START RIDE / COMPLETE RIDE / DELETE BUTTONS FOR DRIVER */}
                       {ride.status === "scheduled" && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => startDriverGpsTracking(ride._id, true)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5 h-8"
+                          >
+                            <Play className="h-3.5 w-3.5 fill-current" /> Start Ride & GPS
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteRide(ride._id)}
+                            disabled={actionLoadingId === ride._id}
+                            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold text-xs rounded-xl gap-1.5 h-8"
+                          >
+                            {actionLoadingId === ride._id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+
+                      {(ride.status === "completed" || ride.status === "cancelled") && (
                         <Button
                           size="sm"
-                          onClick={() => startDriverGpsTracking(ride._id, true)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5 h-8"
+                          variant="ghost"
+                          onClick={() => handleDeleteRide(ride._id)}
+                          disabled={actionLoadingId === ride._id}
+                          className="text-slate-400 hover:text-rose-600 text-xs rounded-xl gap-1 h-8 px-2"
+                          title="Delete Ride Record"
                         >
-                          <Play className="h-3.5 w-3.5 fill-current" /> Start Ride & GPS
+                          {actionLoadingId === ride._id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                          <span className="hidden sm:inline">Delete</span>
                         </Button>
                       )}
 
