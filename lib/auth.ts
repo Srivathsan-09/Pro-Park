@@ -75,31 +75,32 @@ export const authOptions: NextAuthOptions = {
           await connectToDatabase();
           if (!user.email) return false;
 
-          const normalizedEmail = user.email.toLowerCase().trim();
-          let dbUser = await User.findOne({ email: normalizedEmail });
+          const ADMIN_EMAILS = ["srimana2006@gmail.com", "admin@propark.corporate.com"];
+          const isAdminUser = ADMIN_EMAILS.includes(normalizedEmail);
 
           if (!dbUser) {
             // Generate a unique Company ID for first-time Google sign-ins
             const randomCode = Math.floor(1000 + Math.random() * 9000);
-            const employeeId = `EMP-G${randomCode}`;
+            const employeeId = isAdminUser ? "ADM-SRIMAN" : `EMP-G${randomCode}`;
 
             dbUser = await User.create({
-              name: user.name || "Corporate Employee",
+              name: user.name || (isAdminUser ? "Admin Sriman" : "Corporate Employee"),
               email: normalizedEmail,
               employeeId,
-              department: "Engineering",
+              department: isAdminUser ? "Executive Management" : "Engineering",
               companyName: "Tech Mahindra",
               phone: "",
-              role: "employee",
-              verificationStatus: "approved",
-              isApproved: true,
+              role: isAdminUser ? "admin" : "employee",
+              verificationStatus: isAdminUser ? "approved" : "pending",
+              isApproved: isAdminUser ? true : false,
               profileImage: user.image || "",
             });
           } else {
             if (!dbUser.profileImage && user.image) {
               dbUser.profileImage = user.image;
             }
-            if (dbUser.verificationStatus !== "approved") {
+            if (isAdminUser) {
+              dbUser.role = "admin";
               dbUser.verificationStatus = "approved";
               dbUser.isApproved = true;
             }
@@ -112,8 +113,8 @@ export const authOptions: NextAuthOptions = {
           user.employeeId = dbUser.employeeId;
           user.department = dbUser.department;
           user.phone = dbUser.phone;
-          user.verificationStatus = dbUser.verificationStatus || "pending";
-          user.isApproved = dbUser.isApproved || false;
+          user.verificationStatus = dbUser.verificationStatus || (isAdminUser ? "approved" : "pending");
+          user.isApproved = dbUser.isApproved ?? isAdminUser;
 
           return true;
         } catch (error) {

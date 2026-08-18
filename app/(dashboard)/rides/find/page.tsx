@@ -325,6 +325,16 @@ export default function FindRidePage() {
         </Link>
       </div>
 
+      {session?.user?.role !== "admin" && session?.user?.verificationStatus === "pending" && (
+        <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 p-4 border border-amber-200 text-amber-900 text-xs animate-in fade-in-50">
+          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <strong className="block text-sm font-bold text-amber-900">Employee Account Pending Admin Verification</strong>
+            Your profile has been submitted for campus security and HR admin review. You can explore available routes, and seat booking will be unlocked as soon as Admin approves your account.
+          </div>
+        </div>
+      )}
+
       {/* Search & Filter Bar */}
       <Card className="border-slate-200 shadow-sm bg-white rounded-2xl">
         <CardContent className="p-4 sm:p-5">

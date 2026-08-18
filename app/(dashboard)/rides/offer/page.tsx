@@ -510,15 +510,39 @@ export default function OfferRidePage() {
                         <SelectValue placeholder="Select vehicle" />
                       </SelectTrigger>
                       <SelectContent>
-                        {vehicles.map((v) => (
-                          <SelectItem key={v._id} value={v._id}>
-                            {v.vehicleModel} ({v.registrationNumber}) — {v.vehicleType}
-                          </SelectItem>
-                        ))}
+                        {vehicles.map((v) => {
+                          const isApproved = v.isApproved || v.verificationStatus === "approved" || session?.user?.role === "admin";
+                          return (
+                            <SelectItem key={v._id} value={v._id}>
+                              {v.vehicleModel} ({v.registrationNumber}) — {v.vehicleType} {!isApproved ? "⚠️ (Pending Admin Approval)" : "✓ Verified"}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+
+                {/* Unapproved Employee or Vehicle Warning Banner */}
+                {session?.user?.role !== "admin" && session?.user?.verificationStatus === "pending" && (
+                  <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-amber-900 text-xs animate-in fade-in-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">Employee Profile Pending Approval</strong>
+                      Your account is awaiting Admin approval. You can prepare your commute routes, and they will be publishable once verified by Admin.
+                    </div>
+                  </div>
+                )}
+
+                {selectedVehicle && !selectedVehicle.isApproved && selectedVehicle.verificationStatus !== "approved" && session?.user?.role !== "admin" && (
+                  <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 p-3.5 border border-rose-200 text-rose-900 text-xs animate-in fade-in-50">
+                    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">Vehicle Awaiting Admin Verification</strong>
+                      This vehicle is pending verification by Admin in the fleet management hub. You can publish rides once Admin approves this vehicle.
+                    </div>
+                  </div>
+                )}
 
                 {/* 2. Route Origin & Destination with Autocomplete & Map Pick */}
                 <div className="space-y-3 pt-2 border-t border-slate-100">
