@@ -26,9 +26,21 @@ function LoginForm() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    authError ? "Authentication failed. Please verify your credentials or sign in with Google." : null
-  );
+  const getErrorMessageForAuth = (error: string | null) => {
+    if (!error) return null;
+    if (error === "OAuthSignin" || error === "OAuthCallback" || error === "redirect_uri_mismatch") {
+      return "Google OAuth connection error. Please ensure your Google Cloud authorized redirect URI is set to: https://propark-corporate.vercel.app/api/auth/callback/google";
+    }
+    if (error === "Callback" || error === "OAuthCreateAccount") {
+      return "Database error during sign-in. Please ensure MONGODB_URI is set in Vercel and MongoDB Atlas IP is 0.0.0.0/0.";
+    }
+    if (error === "Configuration") {
+      return "Server configuration error. Please ensure NEXTAUTH_SECRET and Google credentials are saved in Vercel.";
+    }
+    return "Authentication failed. Please verify your corporate credentials or try signing in with Google.";
+  };
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(getErrorMessageForAuth(authError));
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 

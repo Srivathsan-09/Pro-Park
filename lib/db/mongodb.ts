@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
- * in development and serverless invocations in production.
+ * in development and serverless invocations in production (Vercel).
  */
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -14,8 +14,6 @@ declare global {
   var mongooseCache: MongooseCache | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
 let cached: MongooseCache = global.mongooseCache || { conn: null, promise: null };
 
 if (!global.mongooseCache) {
@@ -23,13 +21,15 @@ if (!global.mongooseCache) {
 }
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
-  if (!MONGODB_URI) {
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
     throw new Error(
-      "Please define the MONGODB_URI environment variable inside .env.local or .env"
+      "Please define the MONGODB_URI environment variable in .env or Vercel Environment Variables"
     );
   }
 
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
 
@@ -37,11 +37,12 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 8000,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     };
 
     cached.promise = mongoose
-      .connect(MONGODB_URI, opts)
+      .connect(uri, opts)
       .then((mongooseInstance) => {
         return mongooseInstance;
       })
